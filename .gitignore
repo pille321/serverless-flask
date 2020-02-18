@@ -1,0 +1,7 @@
+.serverless
+.idea
+venv
+node_modules
+*.iml
+package-lock.json
+__pycache__
