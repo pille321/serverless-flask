@@ -1,11 +1,14 @@
 import os
 
 import boto3
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, json
 
 BOOKS_TABLE = os.environ['BOOKS_TABLE']
 client = boto3.client('dynamodb')
 resource = boto3.resource('dynamodb')
+
+BOOKS_SNS_TOPIC = os.environ['BOOKS_SNS_TOPIC']
+snsclient = boto3.client('sns')
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -13,6 +16,13 @@ app.config["DEBUG"] = True
 
 # A route to return all of the available entries in our catalog.
 #
+
+def publish_to_topic(message):
+    snsclient.publish(
+        TargetArn=BOOKS_SNS_TOPIC,
+        Message=json.dumps(message)
+    )
+
 
 @app.route("/")
 @app.route("/api/v1/books")
@@ -55,7 +65,10 @@ def creat_book():
         }
     )
 
-    return jsonify({
+    book_json = {
         'bookId': book_id,
         'title': title
-    })
+    }
+
+    publish_to_topic(book_json)
+    return jsonify(book_json)

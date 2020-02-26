@@ -8,6 +8,7 @@ plugins:
 
 custom:
   tableName: 'books-table-${self:provider.stage}'
+  snsTopicName: 'books-sns-topic-${self:provider.stage}'
   wsgi:
     app: app.app
     packRequirements: false
@@ -30,8 +31,15 @@ provider:
         - dynamodb:DeleteItem
       Resource:
         - { "Fn::GetAtt": ["UsersDynamoDBTable", "Arn" ] }
+    - Effect: Allow
+      Action:
+        - sns:*
+      Resource:
+        - { "Ref": "BooksSnsTopic"  }
+
   environment:
     BOOKS_TABLE: ${self:custom.tableName}
+    BOOKS_SNS_TOPIC: { "Ref": "BooksSnsTopic"  }
 
 functions:
   app:
@@ -46,14 +54,17 @@ resources:
       Type: 'AWS::DynamoDB::Table'
       Properties:
         AttributeDefinitions:
-          -
-            AttributeName: bookId
+          - AttributeName: bookId
             AttributeType: S
         KeySchema:
-          -
-            AttributeName: bookId
+          - AttributeName: bookId
             KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:custom.tableName}
+    BooksSnsTopic:
+      Type: 'AWS::SNS::Topic'
+      Properties:
+        DisplayName: ${self:custom.snsTopicName}
+        TopicName: ${self:custom.snsTopicName}
